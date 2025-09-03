@@ -3,19 +3,23 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var dotenv = require('dotenv');
+dotenv.config();
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
 const mongoose = require('mongoose');
 
-const name = 'test';
-const password = 'qwer1234';
 
 async function connectDB() {
-  const url = `mongodb+srv://${name}:${password}@cluster0.bkbzknr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
-  await mongoose.connect(url);
-  console.log('Connected to MongoDB');
+  const url = `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@${process.env.MONGODB_HOST_URI}/?retryWrites=true&w=majority&appName=${process.env.MONGODB_APP_NAME}`
+  try {
+    await mongoose.connect(url);
+    console.log('Connected to MongoDB');
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 connectDB();
