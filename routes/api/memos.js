@@ -39,31 +39,27 @@ router.get('/', asyncHandler(async (req, res) => {
   // 페이지네이션
   const skip = (page - 1) * limit;
   const memos = await Memo.find(query)
-    .populate('userId', 'username email')
-    .populate('templateId', 'name preview backgroundColor textColor')
     .skip(skip)
     .limit(parseInt(limit))
     .sort(sortOptions);
 
   const total = await Memo.countDocuments(query);
 
+  // 프론트엔드가 기대하는 형식으로 변환
+  const formattedMemos = memos.map(memo => ({
+    id: memo._id.toString(),
+    title: memo.title,
+    content: memo.content,
+    templateId: memo.templateId.toString(),
+    userId: memo.userId.toString(),
+    createdAt: memo.createdAt.toISOString(),
+    updatedAt: memo.updatedAt.toISOString()
+  }));
+
   logger.info(`Retrieved ${memos.length} memos (page ${page})`);
   
-  return apiResponse.success(res, {
-    memos,
-    pagination: {
-      current: parseInt(page),
-      pages: Math.ceil(total / limit),
-      total
-    },
-    filters: {
-      userId,
-      templateId,
-      search,
-      sortBy,
-      sortOrder
-    }
-  });
+  // 프론트엔드는 직접 메모 배열을 기대하므로 formattedMemos만 반환
+  return apiResponse.success(res, formattedMemos);
 }));
 
 /**
@@ -72,16 +68,25 @@ router.get('/', asyncHandler(async (req, res) => {
  * @access  Public
  */
 router.get('/:id', asyncHandler(async (req, res) => {
-  const memo = await Memo.findById(req.params.id)
-    .populate('userId', 'username email')
-    .populate('templateId');
+  const memo = await Memo.findById(req.params.id);
   
   if (!memo) {
     return apiResponse.notFound(res, 'Memo');
   }
 
+  // 프론트엔드가 기대하는 형식으로 변환
+  const formattedMemo = {
+    id: memo._id.toString(),
+    title: memo.title,
+    content: memo.content,
+    templateId: memo.templateId.toString(),
+    userId: memo.userId.toString(),
+    createdAt: memo.createdAt.toISOString(),
+    updatedAt: memo.updatedAt.toISOString()
+  };
+
   logger.info(`Retrieved memo: ${memo.title}`);
-  return apiResponse.success(res, memo);
+  return apiResponse.success(res, formattedMemo);
 }));
 
 /**
@@ -90,11 +95,16 @@ router.get('/:id', asyncHandler(async (req, res) => {
  * @access  Public
  */
 router.post('/', asyncHandler(async (req, res) => {
-  const { title, content, templateId, userId } = req.body;
+  let { title, content, templateId, userId } = req.body;
+
+  // 프론트엔드에서 userId를 '3'으로 하드코딩하는 경우 처리
+  if (!userId) {
+    userId = '1'; // 기본값 설정
+  }
 
   // 기본 유효성 검증
-  if (!title || !content || !templateId || !userId) {
-    return apiResponse.error(res, 'Title, content, templateId, and userId are required', 400);
+  if (!title || !content || !templateId) {
+    return apiResponse.error(res, 'Title, content, and templateId are required', 400);
   }
 
   // 사용자와 템플릿 존재 확인
@@ -120,13 +130,19 @@ router.post('/', asyncHandler(async (req, res) => {
 
   await memo.save();
   
-  // 생성된 메모를 populate해서 반환
-  const populatedMemo = await Memo.findById(memo._id)
-    .populate('userId', 'username email')
-    .populate('templateId', 'name preview backgroundColor textColor');
+  // 프론트엔드가 기대하는 형식으로 메모 반환 (populate 없이)
+  const createdMemo = {
+    id: memo._id.toString(),
+    title: memo.title,
+    content: memo.content,
+    templateId: memo.templateId.toString(),
+    userId: memo.userId.toString(),
+    createdAt: memo.createdAt.toISOString(),
+    updatedAt: memo.updatedAt.toISOString()
+  };
   
   logger.success(`New memo created: ${memo.title} by ${user.username}`);
-  return apiResponse.success(res, populatedMemo, 'Memo created successfully', 201);
+  return apiResponse.success(res, createdMemo);
 }));
 
 /**

@@ -31,16 +31,21 @@ router.get('/', asyncHandler(async (req, res) => {
 
   const total = await DesignTemplate.countDocuments(query);
 
+  // 프론트엔드가 기대하는 형식으로 변환
+  const formattedTemplates = templates.map(template => ({
+    id: template._id.toString(),
+    name: template.name,
+    backgroundColor: template.backgroundColor,
+    textColor: template.textColor,
+    borderStyle: template.borderStyle,
+    shadowStyle: template.shadowStyle,
+    preview: template.preview
+  }));
+
   logger.info(`Retrieved ${templates.length} design templates (page ${page})`);
   
-  return apiResponse.success(res, {
-    templates,
-    pagination: {
-      current: parseInt(page),
-      pages: Math.ceil(total / limit),
-      total
-    }
-  });
+  // 프론트엔드는 직접 배열을 기대하므로 formattedTemplates만 반환
+  return apiResponse.success(res, formattedTemplates);
 }));
 
 /**

@@ -3,6 +3,7 @@ const router = express.Router();
 const logger = require('../../util/logger');
 
 // API 라우터들 import
+const authRouter = require('./auth');
 const usersRouter = require('./users');
 const designTemplatesRouter = require('./design-templates');
 const memosRouter = require('./memos');
@@ -16,11 +17,18 @@ router.get('/', (req, res) => {
     message: 'Memo App API v1.0',
     version: '1.0.0',
     endpoints: {
+      auth: '/api/auth',
       users: '/api/users',
-      designTemplates: '/api/design-templates',
+      templates: '/api/templates',
       memos: '/api/memos'
     },
     documentation: {
+      auth: {
+        'POST /api/auth/login': 'User login',
+        'POST /api/auth/register': 'User registration',
+        'POST /api/auth/logout': 'User logout',
+        'GET /api/auth/me': 'Get current user info'
+      },
       users: {
         'GET /api/users': 'Get all users with pagination and search',
         'GET /api/users/:id': 'Get user by ID',
@@ -29,14 +37,14 @@ router.get('/', (req, res) => {
         'DELETE /api/users/:id': 'Delete user',
         'GET /api/users/:id/memos': 'Get user\'s memos'
       },
-      designTemplates: {
-        'GET /api/design-templates': 'Get all design templates with pagination',
-        'GET /api/design-templates/:id': 'Get template by ID',
-        'POST /api/design-templates': 'Create new template',
-        'PUT /api/design-templates/:id': 'Update template',
-        'DELETE /api/design-templates/:id': 'Delete template',
-        'GET /api/design-templates/:id/memos': 'Get memos using this template',
-        'GET /api/design-templates/stats/popular': 'Get most used templates'
+      templates: {
+        'GET /api/templates': 'Get all design templates with pagination',
+        'GET /api/templates/:id': 'Get template by ID',
+        'POST /api/templates': 'Create new template',
+        'PUT /api/templates/:id': 'Update template',
+        'DELETE /api/templates/:id': 'Delete template',
+        'GET /api/templates/:id/memos': 'Get memos using this template',
+        'GET /api/templates/stats/popular': 'Get most used templates'
       },
       memos: {
         'GET /api/memos': 'Get all memos with filters and pagination',
@@ -53,6 +61,7 @@ router.get('/', (req, res) => {
 });
 
 // API 라우터 등록
+router.use('/auth', authRouter);
 router.use('/users', usersRouter);
 router.use('/templates', designTemplatesRouter);
 router.use('/memos', memosRouter);

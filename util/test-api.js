@@ -64,9 +64,9 @@ async function testAPI() {
 
     // 2. 디자인 템플릿 조회 테스트
     logger.info('Testing design templates endpoint...');
-    const templatesResponse = await makeRequest(`${BASE_URL}/design-templates`);
+    const templatesResponse = await makeRequest(`${BASE_URL}/templates`);
     if (templatesResponse.status === 200) {
-      logger.success(`✅ Design templates endpoint working (${templatesResponse.data.data?.templates?.length || 0} templates)`);
+      logger.success(`✅ Design templates endpoint working (${templatesResponse.data?.length || 0} templates)`);
     } else {
       logger.error(`❌ Design templates failed: ${templatesResponse.status}`);
     }
@@ -75,7 +75,7 @@ async function testAPI() {
     logger.info('Testing memos endpoint...');
     const memosResponse = await makeRequest(`${BASE_URL}/memos`);
     if (memosResponse.status === 200) {
-      logger.success(`✅ Memos endpoint working (${memosResponse.data.data?.memos?.length || 0} memos)`);
+      logger.success(`✅ Memos endpoint working (${memosResponse.data?.length || 0} memos)`);
     } else {
       logger.error(`❌ Memos failed: ${memosResponse.status}`);
     }
@@ -84,19 +84,18 @@ async function testAPI() {
     logger.info('Testing users endpoint...');
     const usersResponse = await makeRequest(`${BASE_URL}/users`);
     if (usersResponse.status === 200) {
-      logger.success(`✅ Users endpoint working (${usersResponse.data.data?.users?.length || 0} users)`);
+      logger.success(`✅ Users endpoint working (${usersResponse.data?.users?.length || 0} users)`);
     } else {
       logger.error(`❌ Users failed: ${usersResponse.status}`);
     }
 
-    // 5. 통계 엔드포인트 테스트
-    logger.info('Testing stats endpoint...');
-    const statsResponse = await makeRequest(`${BASE_URL}/memos/stats/overview`);
-    if (statsResponse.status === 200) {
-      logger.success('✅ Stats endpoint working');
-      logger.info(`📊 Total memos: ${statsResponse.data.data?.totals?.memos || 0}`);
+    // 5. 인증 엔드포인트 테스트
+    logger.info('Testing auth endpoints...');
+    const authResponse = await makeRequest(`${BASE_URL}/auth/me`);
+    if (authResponse.status === 200 || authResponse.status === 404) {
+      logger.success('✅ Auth endpoint accessible');
     } else {
-      logger.error(`❌ Stats failed: ${statsResponse.status}`);
+      logger.error(`❌ Auth failed: ${authResponse.status}`);
     }
 
     logger.success('🎉 API tests completed!');

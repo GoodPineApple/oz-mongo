@@ -3,11 +3,12 @@ const logger = require('../util/logger');
 // API 응답 헬퍼 함수들
 const apiResponse = {
   success: (res, data = null, message = 'Success', statusCode = 200) => {
-    return res.status(statusCode).json({
-      success: true,
-      message,
-      data
-    });
+    return res.status(statusCode).json(data);
+    // return res.status(statusCode).json({
+    //   success: true,
+    //   message,
+    //   data
+    // });
   },
 
   error: (res, message = 'Internal Server Error', statusCode = 500, errors = null) => {

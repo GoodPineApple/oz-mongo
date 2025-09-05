@@ -5,18 +5,8 @@ const logger = require('./logger');
 const { User, DesignTemplate, Memo } = require('../models');
 
 const seedData = {
-  users: [
-    {
-      _id: '1',
-      username: 'testuser',
-      email: 'test@example.com',
-      password: 'password123' // 실제 환경에서는 해시화 필요
-    }
-  ],
-  
   designTemplates: [
     {
-      id: '1',
       name: 'Classic White',
       backgroundColor: '#ffffff',
       textColor: '#333333',
@@ -25,7 +15,6 @@ const seedData = {
       preview: '🎨'
     },
     {
-      id: '2',
       name: 'Dark Theme',
       backgroundColor: '#2c3e50',
       textColor: '#ecf0f1',
@@ -34,7 +23,6 @@ const seedData = {
       preview: '🌙'
     },
     {
-      id: '3',
       name: 'Warm Beige',
       backgroundColor: '#f5f5dc',
       textColor: '#8b4513',
@@ -43,7 +31,6 @@ const seedData = {
       preview: '☕'
     },
     {
-      id: '4',
       name: 'Ocean Blue',
       backgroundColor: '#e8f4f8',
       textColor: '#2c3e50',
