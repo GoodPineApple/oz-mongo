@@ -1,0 +1,60 @@
+const express = require('express');
+const router = express.Router();
+const logger = require('../../util/logger');
+
+// API 라우터들 import
+const usersRouter = require('./users');
+const designTemplatesRouter = require('./design-templates');
+const memosRouter = require('./memos');
+
+// API 정보 엔드포인트
+router.get('/', (req, res) => {
+  logger.info('API root endpoint accessed');
+  
+  res.json({
+    success: true,
+    message: 'Memo App API v1.0',
+    version: '1.0.0',
+    endpoints: {
+      users: '/api/users',
+      designTemplates: '/api/design-templates',
+      memos: '/api/memos'
+    },
+    documentation: {
+      users: {
+        'GET /api/users': 'Get all users with pagination and search',
+        'GET /api/users/:id': 'Get user by ID',
+        'POST /api/users': 'Create new user',
+        'PUT /api/users/:id': 'Update user',
+        'DELETE /api/users/:id': 'Delete user',
+        'GET /api/users/:id/memos': 'Get user\'s memos'
+      },
+      designTemplates: {
+        'GET /api/design-templates': 'Get all design templates with pagination',
+        'GET /api/design-templates/:id': 'Get template by ID',
+        'POST /api/design-templates': 'Create new template',
+        'PUT /api/design-templates/:id': 'Update template',
+        'DELETE /api/design-templates/:id': 'Delete template',
+        'GET /api/design-templates/:id/memos': 'Get memos using this template',
+        'GET /api/design-templates/stats/popular': 'Get most used templates'
+      },
+      memos: {
+        'GET /api/memos': 'Get all memos with filters and pagination',
+        'GET /api/memos/:id': 'Get memo by ID',
+        'POST /api/memos': 'Create new memo',
+        'PUT /api/memos/:id': 'Update memo',
+        'DELETE /api/memos/:id': 'Delete memo',
+        'GET /api/memos/stats/overview': 'Get memo statistics',
+        'POST /api/memos/:id/duplicate': 'Duplicate a memo'
+      }
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API 라우터 등록
+router.use('/users', usersRouter);
+router.use('/templates', designTemplatesRouter);
+router.use('/memos', memosRouter);
+
+module.exports = router;

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const logger = require('./logger');
 
 class Database {
   constructor() {
@@ -44,15 +45,15 @@ class Database {
       
       // 연결 이벤트 리스너 설정
       this._connection.on('connected', () => {
-        console.log('✅ Connected to MongoDB');
+        logger.database('Connected to MongoDB', '✅');
       });
 
       this._connection.on('error', (err) => {
-        console.error('❌ MongoDB connection error:', err);
+        logger.error(`MongoDB connection error: ${err.message}`);
       });
 
       this._connection.on('disconnected', () => {
-        console.log('⚠️ MongoDB disconnected');
+        logger.warning('MongoDB disconnected', '⚠️');
       });
 
       // 프로세스 종료 시 연결 정리
@@ -64,7 +65,7 @@ class Database {
 
     } catch (error) {
       this._isConnecting = false;
-      console.error('❌ Failed to connect to MongoDB:', error);
+      logger.error(`Failed to connect to MongoDB: ${error.message}`);
       throw error;
     }
   }
@@ -73,7 +74,7 @@ class Database {
     if (this._connection) {
       await mongoose.connection.close();
       this._connection = null;
-      console.log('🔌 MongoDB connection closed');
+      logger.database('MongoDB connection closed', '🔌');
     }
   }
 

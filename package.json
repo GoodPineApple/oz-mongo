@@ -5,10 +5,12 @@
   "scripts": {
     "start": "node ./bin/www",
     "seed": "node ./util/seed-data.js",
-    "test-db": "node ./util/test-connection.js"
+    "test-db": "node ./util/test-connection.js",
+    "test-api": "node ./util/test-api.js"
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
+    "cors": "^2.8.5",
     "debug": "~2.6.9",
     "dotenv": "^17.2.2",
     "express": "~4.16.1",

@@ -1,6 +1,7 @@
 // 시드 데이터 스크립트
 require('dotenv').config();
 const database = require('./database');
+const logger = require('./logger');
 const { User, DesignTemplate, Memo } = require('../models');
 
 const seedData = {
@@ -55,29 +56,29 @@ const seedData = {
 
 async function seedDatabase() {
   try {
-    console.log('🌱 Starting database seeding...');
+    logger.seed('Starting database seeding...');
     
     await database.connect();
     
     // 기존 데이터 삭제
-    console.log('🧹 Clearing existing data...');
+    logger.seed('Clearing existing data...', '🧹');
     await DesignTemplate.deleteMany({});
     
     // 디자인 템플릿 생성
-    console.log('🎨 Creating design templates...');
+    logger.seed('Creating design templates...', '🎨');
     await DesignTemplate.insertMany(seedData.designTemplates);
-    console.log(`✅ Created ${seedData.designTemplates.length} design templates`);
+    logger.success(`Created ${seedData.designTemplates.length} design templates`);
     
-    console.log('🎉 Database seeding completed successfully!');
+    logger.success('Database seeding completed successfully!', '🎉');
     
     // 생성된 데이터 확인
     const templateCount = await DesignTemplate.countDocuments();
     
-    console.log('📊 Final counts:');
-    console.log(`   Templates: ${templateCount}`);
+    logger.info('Final counts:', '📊');
+    logger.info(`   Templates: ${templateCount}`);
     
   } catch (error) {
-    console.error('❌ Seeding failed:', error);
+    logger.error(`Seeding failed: ${error.message}`);
   } finally {
     await database.close();
     process.exit(0);
