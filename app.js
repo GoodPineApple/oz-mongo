@@ -6,23 +6,16 @@ var logger = require('morgan');
 var dotenv = require('dotenv');
 dotenv.config();
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+var indexRouter = require('./routes/index-router');
+var usersRouter = require('./routes/users-router');
 
-const mongoose = require('mongoose');
+const database = require('./util/database');
 
-
-async function connectDB() {
-  const url = `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@${process.env.MONGODB_HOST_URI}/?retryWrites=true&w=majority&appName=${process.env.MONGODB_APP_NAME}`
-  try {
-    await mongoose.connect(url);
-    console.log('Connected to MongoDB');
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-connectDB();
+// MongoDB 연결 초기화
+database.connect().catch(err => {
+  console.error('Failed to connect to database:', err);
+  process.exit(1);
+});
 var app = express();
 
 // view engine setup
