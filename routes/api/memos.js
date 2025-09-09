@@ -3,7 +3,9 @@ const router = express.Router();
 const { Memo, User, DesignTemplate } = require('../../models');
 const { apiResponse, asyncHandler } = require('../../middleware/errorHandler');
 const { authenticateToken, optionalAuth } = require('../../middleware/authMiddleware');
+const { uploadSingleImage, handleUploadError } = require('../../middleware/multerConfig');
 const logger = require('../../util/logger');
+const path = require('path');
 
 /**
  * @route   GET /api/memos
@@ -53,6 +55,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     content: memo.content,
     templateId: memo.templateId.toString(),
     userId: memo.userId.toString(),
+    imageUrl: memo.imageUrl,
     createdAt: memo.createdAt.toISOString(),
     updatedAt: memo.updatedAt.toISOString()
   }));
@@ -82,6 +85,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
     content: memo.content,
     templateId: memo.templateId.toString(),
     userId: memo.userId.toString(),
+    imageUrl: memo.imageUrl,
     createdAt: memo.createdAt.toISOString(),
     updatedAt: memo.updatedAt.toISOString()
   };
@@ -129,6 +133,7 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
     content: memo.content,
     templateId: memo.templateId.toString(),
     userId: memo.userId.toString(),
+    imageUrl: memo.imageUrl,
     createdAt: memo.createdAt.toISOString(),
     updatedAt: memo.updatedAt.toISOString()
   };
@@ -186,6 +191,70 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 
   logger.success(`Memo deleted: ${memo.title}`);
   return apiResponse.success(res, null, 'Memo deleted successfully');
+}));
+
+/**
+ * @route   POST /api/memos/with-image
+ * @desc    Create new memo with image upload
+ * @access  Private (requires authentication)
+ */
+router.post('/with-image', authenticateToken, (req, res, next) => {
+  uploadSingleImage(req, res, (err) => {
+    if (err) {
+      return handleUploadError(err, req, res, next);
+    }
+    next();
+  });
+}, asyncHandler(async (req, res) => {
+  const { title, content, templateId } = req.body;
+  
+  // 인증된 사용자의 ID 사용
+  const userId = req.user.id;
+
+  // 기본 유효성 검증
+  if (!title || !content || !templateId) {
+    return apiResponse.error(res, 'Title, content, and templateId are required', 400);
+  }
+
+  // 템플릿 존재 확인 (사용자는 이미 인증됨)
+  const template = await DesignTemplate.findById(templateId);
+
+  if (!template) {
+    return apiResponse.error(res, 'Design template not found', 404);
+  }
+
+  // 이미지 URL 생성 (업로드된 파일이 있는 경우)
+  let imageUrl = null;
+  if (req.file) {
+    // 상대 경로로 저장 (uploads 폴더 기준)
+    const relativePath = req.file.path.replace(path.join(__dirname, '../../'), '');
+    imageUrl = `/${relativePath.replace(/\\/g, '/')}`;  // Windows 경로 구분자 처리
+  }
+
+  const memo = new Memo({
+    title,
+    content,
+    templateId,
+    userId,
+    imageUrl
+  });
+
+  await memo.save();
+  
+  // 프론트엔드가 기대하는 형식으로 메모 반환 (populate 없이)
+  const createdMemo = {
+    id: memo._id.toString(),
+    title: memo.title,
+    content: memo.content,
+    templateId: memo.templateId.toString(),
+    userId: memo.userId.toString(),
+    imageUrl: memo.imageUrl,
+    createdAt: memo.createdAt.toISOString(),
+    updatedAt: memo.updatedAt.toISOString()
+  };
+  
+  logger.success(`New memo with image created: ${memo.title} by ${req.user.username}`);
+  return apiResponse.success(res, createdMemo);
 }));
 
 /**

@@ -183,6 +183,7 @@ router.get('/verify-email', asyncHandler(async (req, res) => {
   user.isEmailVerified = true;
   user.emailVerificationToken = null;
   user.emailVerificationExpires = null;
+  
   await user.save();
 
   // JWT 토큰 생성 (인증 완료 후 자동 로그인)

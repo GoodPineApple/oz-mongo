@@ -24,6 +24,11 @@ const memoSchema = new Schema({
     type: Schema.Types.Mixed, // ObjectId 또는 String 모두 허용
     ref: 'User',
     required: [true, 'User ID is required']
+  },
+  imageUrl: {
+    type: String,
+    default: null,
+    trim: true
   }
 }, {
   timestamps: true,
