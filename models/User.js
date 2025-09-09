@@ -1,6 +1,7 @@
 const database = require('../util/database');
 const mongoose = database.getMongoose();
 const { Schema } = mongoose;
+const jwtService = require('../util/jwtService');
 
 const userSchema = new Schema({
   username: {
@@ -23,6 +24,18 @@ const userSchema = new Schema({
     type: String,
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters long']
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: {
+    type: String,
+    default: null
+  },
+  emailVerificationExpires: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true,
@@ -32,6 +45,7 @@ const userSchema = new Schema({
       delete ret._id;
       delete ret.__v;
       delete ret.password; // 비밀번호는 응답에서 제외
+      delete ret.emailVerificationToken; // 인증 토큰도 응답에서 제외
       return ret;
     }
   },
@@ -45,12 +59,35 @@ const userSchema = new Schema({
   }
 });
 
-// 비밀번호 해시화는 별도의 미들웨어에서 처리하는 것을 권장
-// userSchema.pre('save', async function(next) {
-//   if (!this.isModified('password')) return next();
-//   this.password = await bcrypt.hash(this.password, 12);
-//   next();
-// });
+// 비밀번호 해시화 미들웨어
+userSchema.pre('save', async function(next) {
+  // 비밀번호가 수정되지 않았으면 스킵
+  if (!this.isModified('password')) return next();
+  
+  try {
+    // 비밀번호 해시화
+    this.password = await jwtService.hashPassword(this.password);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 비밀번호 비교 메서드 추가
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return await jwtService.comparePassword(candidatePassword, this.password);
+};
+
+// JWT 토큰 생성 메서드 추가
+userSchema.methods.generateAuthToken = function() {
+  const payload = {
+    userId: this._id.toString(),
+    username: this.username,
+    email: this.email,
+    isEmailVerified: this.isEmailVerified
+  };
+  return jwtService.generateToken(payload);
+};
 
 const User = mongoose.model('User', userSchema);
 

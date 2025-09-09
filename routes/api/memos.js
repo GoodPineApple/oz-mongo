@@ -2,14 +2,15 @@ const express = require('express');
 const router = express.Router();
 const { Memo, User, DesignTemplate } = require('../../models');
 const { apiResponse, asyncHandler } = require('../../middleware/errorHandler');
+const { authenticateToken, optionalAuth } = require('../../middleware/authMiddleware');
 const logger = require('../../util/logger');
 
 /**
  * @route   GET /api/memos
  * @desc    Get all memos with filters
- * @access  Public
+ * @access  Public (optional auth for personalized results)
  */
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const { 
     page = 1, 
     limit = 10, 
@@ -92,30 +93,21 @@ router.get('/:id', asyncHandler(async (req, res) => {
 /**
  * @route   POST /api/memos
  * @desc    Create new memo
- * @access  Public
+ * @access  Private (requires authentication)
  */
-router.post('/', asyncHandler(async (req, res) => {
-  let { title, content, templateId, userId } = req.body;
-
-  // 프론트엔드에서 userId를 '3'으로 하드코딩하는 경우 처리
-  if (!userId) {
-    userId = '1'; // 기본값 설정
-  }
+router.post('/', authenticateToken, asyncHandler(async (req, res) => {
+  const { title, content, templateId } = req.body;
+  
+  // 인증된 사용자의 ID 사용
+  const userId = req.user.id;
 
   // 기본 유효성 검증
   if (!title || !content || !templateId) {
     return apiResponse.error(res, 'Title, content, and templateId are required', 400);
   }
 
-  // 사용자와 템플릿 존재 확인
-  const [user, template] = await Promise.all([
-    User.findById(userId),
-    DesignTemplate.findById(templateId)
-  ]);
-
-  if (!user) {
-    return apiResponse.error(res, 'User not found', 404);
-  }
+  // 템플릿 존재 확인 (사용자는 이미 인증됨)
+  const template = await DesignTemplate.findById(templateId);
 
   if (!template) {
     return apiResponse.error(res, 'Design template not found', 404);
@@ -141,7 +133,7 @@ router.post('/', asyncHandler(async (req, res) => {
     updatedAt: memo.updatedAt.toISOString()
   };
   
-  logger.success(`New memo created: ${memo.title} by ${user.username}`);
+  logger.success(`New memo created: ${memo.title} by ${req.user.username}`);
   return apiResponse.success(res, createdMemo);
 }));
 

@@ -24,10 +24,13 @@ router.get('/', (req, res) => {
     },
     documentation: {
       auth: {
-        'POST /api/auth/login': 'User login',
-        'POST /api/auth/register': 'User registration',
+        'POST /api/auth/login': 'User login (requires email verification) - Returns JWT token',
+        'POST /api/auth/register': 'User registration (sends verification email) - Password auto-hashed',
+        'GET /api/auth/verify-email': 'Verify email with token (query params)',
+        'POST /api/auth/resend-verification': 'Resend verification email',
         'POST /api/auth/logout': 'User logout',
-        'GET /api/auth/me': 'Get current user info'
+        'GET /api/auth/me': 'Get current user info (requires JWT token)',
+        'POST /api/auth/refresh-token': 'Refresh JWT token'
       },
       users: {
         'GET /api/users': 'Get all users with pagination and search',

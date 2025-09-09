@@ -1,6 +1,5 @@
 // API 테스트 스크립트
 require('dotenv').config();
-const axios = require('axios'); // npm install axios 필요
 const logger = require('./logger');
 
 const BASE_URL = 'http://localhost:3000/api';
@@ -91,11 +90,39 @@ async function testAPI() {
 
     // 5. 인증 엔드포인트 테스트
     logger.info('Testing auth endpoints...');
-    const authResponse = await makeRequest(`${BASE_URL}/auth/me`);
-    if (authResponse.status === 200 || authResponse.status === 404) {
-      logger.success('✅ Auth endpoint accessible');
+    
+    // 회원가입 테스트
+    const registerResponse = await makeRequest(`${BASE_URL}/auth/register`, {
+      method: 'POST',
+      data: {
+        username: 'testuser_' + Date.now(),
+        email: `test_${Date.now()}@example.com`,
+        password: 'password123'
+      }
+    });
+    
+    if (registerResponse.status === 201) {
+      logger.success('✅ Registration endpoint working');
+      logger.info('📧 Check console for verification email details');
     } else {
-      logger.error(`❌ Auth failed: ${authResponse.status}`);
+      logger.error(`❌ Registration failed: ${registerResponse.status}`);
+    }
+    
+    // 로그인 테스트 (이메일 미인증 상태)
+    const loginResponse = await makeRequest(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      data: {
+        username: 'testuser',
+        password: 'password123'
+      }
+    });
+    
+    if (loginResponse.status === 403) {
+      logger.success('✅ Email verification check working');
+    } else if (loginResponse.status === 401) {
+      logger.info('ℹ️ Login endpoint working (user not found)');
+    } else {
+      logger.error(`❌ Login test unexpected: ${loginResponse.status}`);
     }
 
     logger.success('🎉 API tests completed!');
