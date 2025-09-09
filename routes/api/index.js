@@ -7,6 +7,7 @@ const authRouter = require('./auth');
 const usersRouter = require('./users');
 const designTemplatesRouter = require('./design-templates');
 const memosRouter = require('./memos');
+const filesRouter = require('./files');
 
 // API 정보 엔드포인트
 router.get('/', (req, res) => {
@@ -20,7 +21,8 @@ router.get('/', (req, res) => {
       auth: '/api/auth',
       users: '/api/users',
       templates: '/api/templates',
-      memos: '/api/memos'
+      memos: '/api/memos',
+      files: '/api/files'
     },
     documentation: {
       auth: {
@@ -56,7 +58,17 @@ router.get('/', (req, res) => {
         'PUT /api/memos/:id': 'Update memo',
         'DELETE /api/memos/:id': 'Delete memo',
         'GET /api/memos/stats/overview': 'Get memo statistics',
-        'POST /api/memos/:id/duplicate': 'Duplicate a memo'
+        'POST /api/memos/:id/duplicate': 'Duplicate a memo',
+        'POST /api/memos/with-image': 'Create memo with image upload'
+      },
+      files: {
+        'POST /api/files/upload/:domain': 'Upload file for specific domain (memo, profile-image, template-image)',
+        'GET /api/files/:id': 'Get file by ID',
+        'GET /api/files/domain/:domain/:referenceId': 'Get files by domain and reference ID',
+        'GET /api/files/user/:userId': 'Get files uploaded by user',
+        'DELETE /api/files/:id': 'Delete file (soft delete)',
+        'POST /api/files/:id/download': 'Track file download',
+        'GET /api/files/stats/overview': 'Get file statistics'
       }
     },
     timestamp: new Date().toISOString()
@@ -68,5 +80,6 @@ router.use('/auth', authRouter);
 router.use('/users', usersRouter);
 router.use('/templates', designTemplatesRouter);
 router.use('/memos', memosRouter);
+router.use('/files', filesRouter);
 
 module.exports = router;

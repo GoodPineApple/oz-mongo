@@ -1,15 +1,16 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { DOMAIN_TYPES } = require('../models/File');
 
-// uploads 디렉토리 구조 생성
-const createUploadDirs = () => {
+// uploads 디렉토리 구조 생성 (도메인별로 구성)
+const createUploadDirs = (domain = DOMAIN_TYPES.MEMO) => {
   const baseDir = path.join(__dirname, '../uploads');
-  const memosDir = path.join(baseDir, 'memos');
-  const yearDir = path.join(memosDir, new Date().getFullYear().toString());
+  const domainDir = path.join(baseDir, domain);
+  const yearDir = path.join(domainDir, new Date().getFullYear().toString());
   const monthDir = path.join(yearDir, String(new Date().getMonth() + 1).padStart(2, '0'));
   
-  [baseDir, memosDir, yearDir, monthDir].forEach(dir => {
+  [baseDir, domainDir, yearDir, monthDir].forEach(dir => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -18,24 +19,29 @@ const createUploadDirs = () => {
   return monthDir;
 };
 
-// 파일 저장 설정
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = createUploadDirs();
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    // 파일명 형식: memo_userId_timestamp_originalname
-    const userId = req.user ? req.user.id : 'anonymous';
-    const timestamp = Date.now();
-    const ext = path.extname(file.originalname);
-    const name = path.basename(file.originalname, ext);
-    const sanitizedName = name.replace(/[^a-zA-Z0-9가-힣]/g, '_');
-    
-    const filename = `memo_${userId}_${timestamp}_${sanitizedName}${ext}`;
-    cb(null, filename);
-  }
-});
+// 도메인별 파일 저장 설정을 생성하는 함수
+const createStorage = (domain = DOMAIN_TYPES.MEMO) => {
+  return multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadDir = createUploadDirs(domain);
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      // 파일명 형식: domain_userId_timestamp_originalname
+      const userId = req.user ? req.user.id : 'anonymous';
+      const timestamp = Date.now();
+      const ext = path.extname(file.originalname);
+      const name = path.basename(file.originalname, ext);
+      const sanitizedName = name.replace(/[^a-zA-Z0-9가-힣]/g, '_');
+      
+      const filename = `${domain}_${userId}_${timestamp}_${sanitizedName}${ext}`;
+      cb(null, filename);
+    }
+  });
+};
+
+// 기본 스토리지 (메모용)
+const storage = createStorage(DOMAIN_TYPES.MEMO);
 
 // 파일 필터링 (이미지만 허용)
 const fileFilter = (req, file, cb) => {
@@ -52,7 +58,7 @@ const fileFilter = (req, file, cb) => {
 
 // multer 설정
 const upload = multer({
-  storage: storage,
+  // storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB 제한
     files: 1 // 단일 파일만 허용
@@ -96,7 +102,25 @@ const handleUploadError = (err, req, res, next) => {
   next(err);
 };
 
+// 도메인별 업로드 미들웨어 생성 함수
+const createUploadMiddleware = (domain, fieldName = 'image') => {
+  const domainStorage = createStorage(domain);
+  const domainUpload = multer({
+    storage: domainStorage,
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB 제한
+      files: 1 // 단일 파일만 허용
+    },
+    fileFilter: fileFilter
+  });
+  
+  return domainUpload.single(fieldName);
+};
+
 module.exports = {
   uploadSingleImage,
-  handleUploadError
+  handleUploadError,
+  createUploadMiddleware,
+  createStorage,
+  DOMAIN_TYPES
 };

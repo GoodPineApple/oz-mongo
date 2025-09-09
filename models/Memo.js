@@ -25,11 +25,17 @@ const memoSchema = new Schema({
     ref: 'User',
     required: [true, 'User ID is required']
   },
+  // 레거시 지원을 위한 imageUrl (기존 데이터 호환성)
   imageUrl: {
     type: String,
     default: null,
     trim: true
-  }
+  },
+  // File 모델 참조 (새로운 파일 시스템)
+  attachedFiles: [{
+    type: Schema.Types.ObjectId,
+    ref: 'File'
+  }]
 }, {
   timestamps: true,
   toJSON: {

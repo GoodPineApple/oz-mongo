@@ -7,6 +7,8 @@ const { uploadSingleImage, handleUploadError } = require('../../middleware/multe
 const logger = require('../../util/logger');
 const path = require('path');
 
+const SERVER_ORIGIN = process.env.SERVER_ORIGIN || 'http://localhost:3001';
+
 /**
  * @route   GET /api/memos
  * @desc    Get all memos with filters
@@ -55,7 +57,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     content: memo.content,
     templateId: memo.templateId.toString(),
     userId: memo.userId.toString(),
-    imageUrl: memo.imageUrl,
+    imageUrl: `${SERVER_ORIGIN}${memo.imageUrl}`,
     createdAt: memo.createdAt.toISOString(),
     updatedAt: memo.updatedAt.toISOString()
   }));
@@ -85,7 +87,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
     content: memo.content,
     templateId: memo.templateId.toString(),
     userId: memo.userId.toString(),
-    imageUrl: memo.imageUrl,
+    imageUrl: `${SERVER_ORIGIN}${memo.imageUrl}`,
     createdAt: memo.createdAt.toISOString(),
     updatedAt: memo.updatedAt.toISOString()
   };
