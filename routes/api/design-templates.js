@@ -135,7 +135,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   }
 
   logger.success(`Design template deleted: ${template.name}`);
-  return apiResponse.success(res, null, 'Design template deleted successfully');
+  return apiResponse.deleted(res);
 }));
 
 /**

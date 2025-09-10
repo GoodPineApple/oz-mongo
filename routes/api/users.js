@@ -125,7 +125,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   }
 
   logger.success(`User deleted: ${user.username}`);
-  return apiResponse.success(res, null, 'User deleted successfully');
+  return apiResponse.deleted(res);
 }));
 
 /**

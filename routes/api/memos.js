@@ -192,7 +192,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   }
 
   logger.success(`Memo deleted: ${memo.title}`);
-  return apiResponse.success(res, null, 'Memo deleted successfully');
+  return apiResponse.deleted(res);
 }));
 
 /**

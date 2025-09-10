@@ -1,10 +1,10 @@
-var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var morganLogger = require('morgan');
 const logger = require('./util/logger');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 var dotenv = require('dotenv');
 dotenv.config();
 
@@ -13,6 +13,12 @@ var usersRouter = require('./routes/users-router');
 const apiRouter = require('./routes/api');
 
 const database = require('./util/database');
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15분
+  max: 100, // 15분 동안 최대 100번 요청
+  message: 'Too many requests, please try again later.'
+});
 
 // MongoDB 연결 초기화
 database.connect().catch(err => {
@@ -25,6 +31,7 @@ var app = express();
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
+app.use(limiter);
 app.use(cors());
 
 // HTTP 로깅 설정
@@ -40,29 +47,13 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/api', apiRouter);
 
-// API 에러 핸들링
+// 통합 에러 핸들링
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
-// API 404 핸들러 (API 경로에만 적용)
-app.use('/api/*', notFoundHandler);
+// 모든 요청에 대한 404 핸들러
+app.use(notFoundHandler);
 
-// API 에러 핸들러
-app.use('/api', errorHandler);
-
-// catch 404 and forward to error handler (일반 페이지용)
-app.use(function(req, res, next) {
-  next(createError(404));
-});
-
-// error handler (일반 페이지용)
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
-});
+// 통합 에러 핸들러 (API와 웹 페이지 모두 처리)
+app.use(errorHandler);
 
 module.exports = app;

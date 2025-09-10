@@ -167,7 +167,7 @@ router.delete('/:id', authenticateToken, asyncHandler(async (req, res) => {
   await FileService.deleteFile(req.params.id);
   
   logger.success(`File deleted: ${file.originalName}`);
-  return apiResponse.success(res, null, 'File deleted successfully');
+  return apiResponse.deleted(res);
 }));
 
 /**
