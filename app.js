@@ -8,9 +8,10 @@ const rateLimit = require('express-rate-limit');
 var dotenv = require('dotenv');
 dotenv.config();
 
-var indexRouter = require('./routes/index-router');
-var usersRouter = require('./routes/users-router');
+const indexRouter = require('./routes/index-router');
 const apiRouter = require('./routes/api');
+const appRouter = require('./routes/app');
+const adminRouter = require('./routes/admin');
 
 const database = require('./util/database');
 
@@ -44,8 +45,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
 app.use('/api', apiRouter);
+app.use('/app', appRouter);
+app.use('/admin', adminRouter);
 
 // 통합 에러 핸들링
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
