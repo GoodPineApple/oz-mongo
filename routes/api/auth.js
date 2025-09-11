@@ -8,9 +8,43 @@ const emailService = require('../../util/emailService');
 const jwtService = require('../../util/jwtService');
 
 /**
- * @route   POST /api/auth/login
- * @desc    User login
- * @access  Public
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: User login
+ *     description: Authenticate user with username/email and password
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginInput'
+ *           example:
+ *             username: "user@example.com"
+ *             password: "password123"
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AuthResponse'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Email verification required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/login', asyncHandler(async (req, res) => {
   const { username, password } = req.body;
@@ -65,9 +99,49 @@ router.post('/login', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   POST /api/auth/register
- * @desc    User registration
- * @access  Public
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: User registration
+ *     description: Register a new user account
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserInput'
+ *           example:
+ *             username: "newuser"
+ *             email: "user@example.com"
+ *             password: "password123"
+ *     responses:
+ *       201:
+ *         description: Registration successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         message:
+ *                           type: string
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *                         requiresEmailVerification:
+ *                           type: boolean
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       409:
+ *         description: Username or email already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/register', asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
@@ -136,9 +210,40 @@ router.post('/register', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   GET /api/auth/verify-email?email=test@gmail.com&token=123456
- * @desc    Verify user email with token
- * @access  Public
+ * @swagger
+ * /api/auth/verify-email:
+ *   get:
+ *     summary: Verify user email
+ *     description: Verify user email with verification token
+ *     tags: [Authentication]
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: email
+ *         description: User email address
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Email verification token
+ *     responses:
+ *       200:
+ *         description: Email verification successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AuthResponse'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
  */
 router.get('/verify-email', asyncHandler(async (req, res) => {
   const { email, token } = req.query;
@@ -205,9 +310,36 @@ router.get('/verify-email', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   POST /api/auth/resend-verification
- * @desc    Resend verification email
- * @access  Public
+ * @swagger
+ * /api/auth/resend-verification:
+ *   post:
+ *     summary: Resend verification email
+ *     description: Resend email verification token to user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *             required: [email]
+ *           example:
+ *             email: "user@example.com"
+ *     responses:
+ *       200:
+ *         description: Verification email sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.post('/resend-verification', asyncHandler(async (req, res) => {
   const { email } = req.body;
@@ -249,9 +381,23 @@ router.post('/resend-verification', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   POST /api/auth/logout
- * @desc    User logout
- * @access  Public
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: User logout
+ *     description: Logout current user (client-side token removal)
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Logged out successfully"
  */
 router.post('/logout', asyncHandler(async (req, res) => {
   // 실제 환경에서는 토큰 블랙리스트 처리 또는 세션 무효화
@@ -262,9 +408,28 @@ router.post('/logout', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   GET /api/auth/me
- * @desc    Get current user info
- * @access  Private
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Get current user info
+ *     description: Get authenticated user information
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/me', authenticateToken, asyncHandler(async (req, res) => {
   // JWT 미들웨어에서 사용자 정보가 req.user에 설정됨
@@ -279,9 +444,47 @@ router.get('/me', authenticateToken, asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   POST /api/auth/refresh-token
- * @desc    Refresh JWT token
- * @access  Public
+ * @swagger
+ * /api/auth/refresh-token:
+ *   post:
+ *     summary: Refresh JWT token
+ *     description: Refresh expired JWT token with refresh token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *             required: [refreshToken]
+ *           example:
+ *             refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *     responses:
+ *       200:
+ *         description: Token refreshed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         token:
+ *                           type: string
+ *                         refreshToken:
+ *                           type: string
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/refresh-token', asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;

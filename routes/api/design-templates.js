@@ -5,9 +5,44 @@ const { apiResponse, asyncHandler } = require('../../middleware/errorHandler');
 const logger = require('../../util/logger');
 
 /**
- * @route   GET /api/design-templates
- * @desc    Get all design templates
- * @access  Public
+ * @swagger
+ * /api/design-templates:
+ *   get:
+ *     summary: Get all design templates
+ *     description: Get all design templates with optional search and pagination
+ *     tags: [Design Templates]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Items per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search in template names
+ *     responses:
+ *       200:
+ *         description: Design templates retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/DesignTemplate'
  */
 
 // localhost:3000/api/design-templates?page=1&limit=10&search=디자인
@@ -49,9 +84,33 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   GET /api/design-templates/:id
- * @desc    Get design template by ID
- * @access  Public
+ * @swagger
+ * /api/design-templates/{id}:
+ *   get:
+ *     summary: Get design template by ID
+ *     description: Get a specific design template by its ID
+ *     tags: [Design Templates]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Design template ID
+ *     responses:
+ *       200:
+ *         description: Design template retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/DesignTemplate'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/:id', asyncHandler(async (req, res) => {
   const template = await DesignTemplate.findById(req.params.id);
@@ -65,9 +124,39 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   POST /api/design-templates
- * @desc    Create new design template
- * @access  Public
+ * @swagger
+ * /api/design-templates:
+ *   post:
+ *     summary: Create new design template
+ *     description: Create a new design template
+ *     tags: [Design Templates]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/DesignTemplateInput'
+ *           example:
+ *             name: "Modern Blue"
+ *             backgroundColor: "#3498db"
+ *             textColor: "#ffffff"
+ *             borderStyle: "2px solid #2980b9"
+ *             shadowStyle: "0 4px 8px rgba(0,0,0,0.1)"
+ *             preview: "🔷"
+ *     responses:
+ *       201:
+ *         description: Design template created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/DesignTemplate'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
  */
 router.post('/', asyncHandler(async (req, res) => {
   const { name, backgroundColor, textColor, borderStyle, shadowStyle, preview } = req.body;
@@ -93,9 +182,63 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   PUT /api/design-templates/:id
- * @desc    Update design template
- * @access  Public
+ * @swagger
+ * /api/design-templates/{id}:
+ *   put:
+ *     summary: Update design template
+ *     description: Update an existing design template
+ *     tags: [Design Templates]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Design template ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 maxLength: 100
+ *               backgroundColor:
+ *                 type: string
+ *                 pattern: '^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'
+ *               textColor:
+ *                 type: string
+ *                 pattern: '^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'
+ *               borderStyle:
+ *                 type: string
+ *                 maxLength: 200
+ *               shadowStyle:
+ *                 type: string
+ *                 maxLength: 200
+ *               preview:
+ *                 type: string
+ *                 maxLength: 10
+ *           example:
+ *             name: "Updated Modern Blue"
+ *             backgroundColor: "#2980b9"
+ *     responses:
+ *       200:
+ *         description: Design template updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/DesignTemplate'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.put('/:id', asyncHandler(async (req, res) => {
   const { name, backgroundColor, textColor, borderStyle, shadowStyle, preview } = req.body;
@@ -123,9 +266,28 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   DELETE /api/design-templates/:id
- * @desc    Delete design template
- * @access  Public
+ * @swagger
+ * /api/design-templates/{id}:
+ *   delete:
+ *     summary: Delete design template
+ *     description: Delete a design template by its ID
+ *     tags: [Design Templates]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Design template ID
+ *     responses:
+ *       200:
+ *         description: Design template deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.delete('/:id', asyncHandler(async (req, res) => {
   const template = await DesignTemplate.findByIdAndDelete(req.params.id);
@@ -139,9 +301,61 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   GET /api/design-templates/:id/memos
- * @desc    Get memos using this template
- * @access  Public
+ * @swagger
+ * /api/design-templates/{id}/memos:
+ *   get:
+ *     summary: Get memos using this template
+ *     description: Get all memos that use a specific design template
+ *     tags: [Design Templates]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Design template ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: Memos using template retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         memos:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Memo'
+ *                         template:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: string
+ *                             name:
+ *                               type: string
+ *                             preview:
+ *                               type: string
+ *                         pagination:
+ *                           $ref: '#/components/schemas/PaginationResponse'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/:id/memos', asyncHandler(async (req, res) => {
   const { Memo } = require('../../models');
@@ -180,9 +394,45 @@ router.get('/:id/memos', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   GET /api/design-templates/popular
- * @desc    Get most used design templates
- * @access  Public
+ * @swagger
+ * /api/design-templates/stats/popular:
+ *   get:
+ *     summary: Get popular design templates
+ *     description: Get the most used design templates based on memo count
+ *     tags: [Design Templates]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 5
+ *         description: Number of popular templates to return
+ *     responses:
+ *       200:
+ *         description: Popular templates retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           templateId:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                           preview:
+ *                             type: string
+ *                           backgroundColor:
+ *                             type: string
+ *                           count:
+ *                             type: integer
+ *                             description: Number of memos using this template
  */
 router.get('/stats/popular', asyncHandler(async (req, res) => {
   const { Memo } = require('../../models');

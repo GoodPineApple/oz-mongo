@@ -10,9 +10,70 @@ const path = require('path');
 const SERVER_ORIGIN = process.env.SERVER_ORIGIN || 'http://localhost:3001';
 
 /**
- * @route   GET /api/memos
- * @desc    Get all memos with filters
- * @access  Public (optional auth for personalized results)
+ * @swagger
+ * /api/memos:
+ *   get:
+ *     summary: Get all memos
+ *     description: Get all memos with optional filters and pagination
+ *     tags: [Memos]
+ *     security:
+ *       - bearerAuth: []
+ *       - {}
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         description: Filter by user ID
+ *       - in: query
+ *         name: templateId
+ *         schema:
+ *           type: string
+ *         description: Filter by template ID
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search in title and content
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           default: createdAt
+ *         description: Sort field
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: Sort order
+ *     responses:
+ *       200:
+ *         description: Memos retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Memo'
  */
 router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const { 
@@ -69,9 +130,33 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   GET /api/memos/:id
- * @desc    Get memo by ID
- * @access  Public
+ * @swagger
+ * /api/memos/{id}:
+ *   get:
+ *     summary: Get memo by ID
+ *     description: Get a specific memo by its ID
+ *     tags: [Memos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Memo ID
+ *     responses:
+ *       200:
+ *         description: Memo retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Memo'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/:id', asyncHandler(async (req, res) => {
   const memo = await Memo.findById(req.params.id);
@@ -97,9 +182,46 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   POST /api/memos
- * @desc    Create new memo
- * @access  Private (requires authentication)
+ * @swagger
+ * /api/memos:
+ *   post:
+ *     summary: Create new memo
+ *     description: Create a new memo (requires authentication)
+ *     tags: [Memos]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/MemoInput'
+ *           example:
+ *             title: "My First Memo"
+ *             content: "This is the content of my memo"
+ *             templateId: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: Memo created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Memo'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         description: Design template not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/', authenticateToken, asyncHandler(async (req, res) => {
   const { title, content, templateId } = req.body;
@@ -145,9 +267,53 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   PUT /api/memos/:id
- * @desc    Update memo
- * @access  Public
+ * @swagger
+ * /api/memos/{id}:
+ *   put:
+ *     summary: Update memo
+ *     description: Update an existing memo
+ *     tags: [Memos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Memo ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 maxLength: 200
+ *               content:
+ *                 type: string
+ *                 maxLength: 10000
+ *               templateId:
+ *                 type: string
+ *           example:
+ *             title: "Updated Memo Title"
+ *             content: "Updated memo content"
+ *     responses:
+ *       200:
+ *         description: Memo updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Memo'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.put('/:id', asyncHandler(async (req, res) => {
   const { title, content, templateId } = req.body;
@@ -180,9 +346,28 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   DELETE /api/memos/:id
- * @desc    Delete memo
- * @access  Public
+ * @swagger
+ * /api/memos/{id}:
+ *   delete:
+ *     summary: Delete memo
+ *     description: Delete a memo by its ID
+ *     tags: [Memos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Memo ID
+ *     responses:
+ *       200:
+ *         description: Memo deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.delete('/:id', asyncHandler(async (req, res) => {
   const memo = await Memo.findByIdAndDelete(req.params.id);
@@ -196,9 +381,55 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   POST /api/memos/with-image
- * @desc    Create new memo with image upload
- * @access  Private (requires authentication)
+ * @swagger
+ * /api/memos/with-image:
+ *   post:
+ *     summary: Create memo with image
+ *     description: Create a new memo with image upload (requires authentication)
+ *     tags: [Memos]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 maxLength: 200
+ *               content:
+ *                 type: string
+ *                 maxLength: 10000
+ *               templateId:
+ *                 type: string
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *             required: [title, content, templateId]
+ *     responses:
+ *       200:
+ *         description: Memo with image created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Memo'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         description: Design template not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/with-image', authenticateToken, (req, res, next) => {
   uploadSingleImage(req, res, (err) => {
@@ -260,9 +491,51 @@ router.post('/with-image', authenticateToken, (req, res, next) => {
 }));
 
 /**
- * @route   GET /api/memos/stats/overview
- * @desc    Get memos statistics
- * @access  Public
+ * @swagger
+ * /api/memos/stats/overview:
+ *   get:
+ *     summary: Get memos statistics
+ *     description: Get comprehensive statistics about memos, users, and templates
+ *     tags: [Memos]
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         totals:
+ *                           type: object
+ *                           properties:
+ *                             memos:
+ *                               type: integer
+ *                             users:
+ *                               type: integer
+ *                             templates:
+ *                               type: integer
+ *                         recentMemos:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Memo'
+ *                         memosByTemplate:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               templateId:
+ *                                 type: string
+ *                               templateName:
+ *                                 type: string
+ *                               preview:
+ *                                 type: string
+ *                               count:
+ *                                 type: integer
  */
 router.get('/stats/overview', asyncHandler(async (req, res) => {
   const [
@@ -327,9 +600,47 @@ router.get('/stats/overview', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   POST /api/memos/:id/duplicate
- * @desc    Duplicate a memo
- * @access  Public
+ * @swagger
+ * /api/memos/{id}/duplicate:
+ *   post:
+ *     summary: Duplicate memo
+ *     description: Create a copy of an existing memo
+ *     tags: [Memos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Original memo ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *             required: [userId]
+ *           example:
+ *             userId: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       201:
+ *         description: Memo duplicated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Memo'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.post('/:id/duplicate', asyncHandler(async (req, res) => {
   const originalMemo = await Memo.findById(req.params.id);

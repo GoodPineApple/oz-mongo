@@ -13,6 +13,8 @@ const apiRouter = require('./routes/api');
 const appRouter = require('./routes/app');
 const adminRouter = require('./routes/admin');
 
+// Swagger 설정은 각 라우터에서 개별적으로 처리
+
 const database = require('./util/database');
 
 const limiter = rateLimit({
@@ -43,6 +45,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Swagger UI는 각 라우터에서 개별적으로 설정됨
 
 app.use('/', indexRouter);
 app.use('/api', apiRouter);

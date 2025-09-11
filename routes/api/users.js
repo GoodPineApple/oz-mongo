@@ -5,9 +5,49 @@ const { apiResponse, asyncHandler } = require('../../middleware/errorHandler');
 const logger = require('../../util/logger');
 
 /**
- * @route   GET /api/users
- * @desc    Get all users
- * @access  Public
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get all users
+ *     description: Get all users with optional search and pagination
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search in username and email
+ *     responses:
+ *       200:
+ *         description: Users retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         users:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/User'
+ *                         pagination:
+ *                           $ref: '#/components/schemas/PaginationResponse'
  */
 router.get('/', asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, search } = req.query;
@@ -46,9 +86,33 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   GET /api/users/:id
- * @desc    Get user by ID
- * @access  Public
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     description: Get a specific user by their ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/User'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/:id', asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id).select('-password');
@@ -62,9 +126,36 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   POST /api/users
- * @desc    Create new user
- * @access  Public
+ * @swagger
+ * /api/users:
+ *   post:
+ *     summary: Create new user
+ *     description: Create a new user account
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserInput'
+ *           example:
+ *             username: "newuser"
+ *             email: "user@example.com"
+ *             password: "password123"
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
  */
 router.post('/', asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
@@ -87,9 +178,52 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   PUT /api/users/:id
- * @desc    Update user
- * @access  Public
+ * @swagger
+ * /api/users/{id}:
+ *   put:
+ *     summary: Update user
+ *     description: Update user information
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 minLength: 3
+ *                 maxLength: 30
+ *               email:
+ *                 type: string
+ *                 format: email
+ *           example:
+ *             username: "updateduser"
+ *             email: "updated@example.com"
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.put('/:id', asyncHandler(async (req, res) => {
   const { username, email } = req.body;
@@ -113,9 +247,28 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   DELETE /api/users/:id
- * @desc    Delete user
- * @access  Public
+ * @swagger
+ * /api/users/{id}:
+ *   delete:
+ *     summary: Delete user
+ *     description: Delete a user by their ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.delete('/:id', asyncHandler(async (req, res) => {
   const user = await User.findByIdAndDelete(req.params.id);
@@ -129,9 +282,52 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 }));
 
 /**
- * @route   GET /api/users/:id/memos
- * @desc    Get user's memos
- * @access  Public
+ * @swagger
+ * /api/users/{id}/memos:
+ *   get:
+ *     summary: Get user's memos
+ *     description: Get all memos created by a specific user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: User's memos retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         memos:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Memo'
+ *                         pagination:
+ *                           $ref: '#/components/schemas/PaginationResponse'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/:id/memos', asyncHandler(async (req, res) => {
   const { Memo } = require('../../models');
