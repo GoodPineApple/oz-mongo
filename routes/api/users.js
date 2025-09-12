@@ -115,6 +115,11 @@ router.get('/', asyncHandler(async (req, res) => {
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/:id', asyncHandler(async (req, res) => {
+  // redis에 user에 대한 정보가 있으면
+  // redis에 있는 값으로 반환
+  // redis에 user에 대한 정보가 없으면
+  // db에서 조회하고, redis에 저장후 반환
+  
   const user = await User.findById(req.params.id).select('-password');
   
   if (!user) {

@@ -62,4 +62,29 @@ app.use(notFoundHandler);
 // 통합 에러 핸들러 (API와 웹 페이지 모두 처리)
 app.use(errorHandler);
 
+const connectRedis = async () => {
+  const { createClient } = require("redis");
+
+  const client = createClient({
+      username: 'default',
+      password: 'FA448fOZxh1e6fHCTM09M8Y9LngsC6e4',
+      socket: {
+          host: 'redis-17538.c62.us-east-1-4.ec2.redns.redis-cloud.com',
+          port: 17538
+      }
+  });
+  
+  client.on('error', err => console.log('Redis Client Error', err));
+  
+  await client.connect();
+  
+  await client.set('foo', 'bar');
+  const result = await client.get('foo');
+  console.log(result)  // >>> bar
+}
+
+connectRedis();
+
+
+
 module.exports = app;
