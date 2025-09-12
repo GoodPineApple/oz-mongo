@@ -3,6 +3,7 @@ const router = express.Router();
 const { User } = require('../../models');
 const { apiResponse, asyncHandler } = require('../../middleware/errorHandler');
 const logger = require('../../util/logger');
+const { getRedisClient } = require('../../util/redisService');
 
 /**
  * @swagger
@@ -115,19 +116,47 @@ router.get('/', asyncHandler(async (req, res) => {
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/:id', asyncHandler(async (req, res) => {
-  // redis에 user에 대한 정보가 있으면
-  // redis에 있는 값으로 반환
-  // redis에 user에 대한 정보가 없으면
-  // db에서 조회하고, redis에 저장후 반환
+  const userId = req.params.id;
+  const cacheKey = `user:${userId}`;
   
-  const user = await User.findById(req.params.id).select('-password');
-  
-  if (!user) {
-    return apiResponse.notFound(res, 'User');
+  try {
+    // Redis에서 캐시된 사용자 정보 조회
+    const redisClient = getRedisClient();
+    const cachedUser = await redisClient.get(cacheKey);
+    
+    if (cachedUser) {
+      // 캐시에 데이터가 있으면 캐시된 데이터 반환
+      const user = JSON.parse(cachedUser);
+      logger.info(`User retrieved from cache: ${user.username}`);
+      return apiResponse.success(res, user);
+    }
+    
+    // 캐시에 데이터가 없으면 DB에서 조회
+    const user = await User.findById(userId).select('-password');
+    
+    if (!user) {
+      return apiResponse.notFound(res, 'User');
+    }
+    
+    // DB에서 조회한 데이터를 Redis에 60초간 캐시
+    await redisClient.setEx(cacheKey, 60, JSON.stringify(user.toObject()));
+    logger.info(`User retrieved from DB and cached: ${user.username}`);
+    
+    return apiResponse.success(res, user);
+    
+  } catch (redisError) {
+    // Redis 오류 시 DB에서 직접 조회 (fallback)
+    logger.warn(`Redis error, falling back to DB: ${redisError.message}`);
+    
+    const user = await User.findById(userId).select('-password');
+    
+    if (!user) {
+      return apiResponse.notFound(res, 'User');
+    }
+    
+    logger.info(`User retrieved from DB (Redis fallback): ${user.username}`);
+    return apiResponse.success(res, user);
   }
-
-  logger.info(`Retrieved user: ${user.username}`);
-  return apiResponse.success(res, user);
 }));
 
 /**
@@ -231,20 +260,31 @@ router.post('/', asyncHandler(async (req, res) => {
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.put('/:id', asyncHandler(async (req, res) => {
+  const userId = req.params.id;
   const { username, email } = req.body;
+  const cacheKey = `user:${userId}`;
   
   const updateData = {};
   if (username) updateData.username = username;
   if (email) updateData.email = email;
 
   const user = await User.findByIdAndUpdate(
-    req.params.id,
+    userId,
     updateData,
     { new: true, runValidators: true }
   ).select('-password');
 
   if (!user) {
     return apiResponse.notFound(res, 'User');
+  }
+
+  // 사용자 정보가 업데이트되었으므로 캐시 무효화
+  try {
+    const redisClient = getRedisClient();
+    await redisClient.del(cacheKey);
+    logger.info(`User cache invalidated for: ${user.username}`);
+  } catch (redisError) {
+    logger.warn(`Failed to invalidate cache: ${redisError.message}`);
   }
 
   logger.success(`User updated: ${user.username}`);
@@ -276,10 +316,22 @@ router.put('/:id', asyncHandler(async (req, res) => {
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.delete('/:id', asyncHandler(async (req, res) => {
-  const user = await User.findByIdAndDelete(req.params.id);
+  const userId = req.params.id;
+  const cacheKey = `user:${userId}`;
+  
+  const user = await User.findByIdAndDelete(userId);
 
   if (!user) {
     return apiResponse.notFound(res, 'User');
+  }
+
+  // 사용자가 삭제되었으므로 캐시 무효화
+  try {
+    const redisClient = getRedisClient();
+    await redisClient.del(cacheKey);
+    logger.info(`User cache invalidated for deleted user: ${user.username}`);
+  } catch (redisError) {
+    logger.warn(`Failed to invalidate cache: ${redisError.message}`);
   }
 
   logger.success(`User deleted: ${user.username}`);

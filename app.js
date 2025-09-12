@@ -16,6 +16,7 @@ const adminRouter = require('./routes/admin');
 // Swagger 설정은 각 라우터에서 개별적으로 처리
 
 const database = require('./util/database');
+const { connectRedis } = require('./util/redisService');
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15분
@@ -27,6 +28,12 @@ const limiter = rateLimit({
 database.connect().catch(err => {
   logger.error(`Failed to connect to database: ${err.message}`);
   process.exit(1);
+});
+
+// Redis 연결 초기화 및 테스트
+connectRedis().catch(err => {
+  logger.error(`Failed to connect to Redis: ${err.message}`);
+  // Redis 연결 실패 시에도 서버는 계속 실행 (선택적 의존성)
 });
 
 var app = express();
@@ -62,28 +69,6 @@ app.use(notFoundHandler);
 // 통합 에러 핸들러 (API와 웹 페이지 모두 처리)
 app.use(errorHandler);
 
-const connectRedis = async () => {
-  const { createClient } = require("redis");
-
-  const client = createClient({
-      username: 'default',
-      password: 'FA448fOZxh1e6fHCTM09M8Y9LngsC6e4',
-      socket: {
-          host: 'redis-17538.c62.us-east-1-4.ec2.redns.redis-cloud.com',
-          port: 17538
-      }
-  });
-  
-  client.on('error', err => console.log('Redis Client Error', err));
-  
-  await client.connect();
-  
-  await client.set('foo', 'bar');
-  const result = await client.get('foo');
-  console.log(result)  // >>> bar
-}
-
-connectRedis();
 
 
 
