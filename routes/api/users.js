@@ -120,13 +120,19 @@ router.get('/:id', asyncHandler(async (req, res) => {
   const cacheKey = `user:${userId}`;
   
   try {
-    // Redis에서 캐시된 사용자 정보 조회
+    // Redis에서 캐시된 사용자 정보 조회 (hash 사용)
     const redisClient = getRedisClient();
-    const cachedUser = await redisClient.get(cacheKey);
+    const cachedUser = await redisClient.hGetAll(cacheKey);
     
-    if (cachedUser) {
+    if (cachedUser && Object.keys(cachedUser).length > 0) {
       // 캐시에 데이터가 있으면 캐시된 데이터 반환
-      const user = JSON.parse(cachedUser);
+      const user = {
+        _id: cachedUser._id,
+        username: cachedUser.username,
+        email: cachedUser.email,
+        createdAt: new Date(cachedUser.createdAt),
+        updatedAt: new Date(cachedUser.updatedAt)
+      };
       logger.info(`User retrieved from cache: ${user.username}`);
       return apiResponse.success(res, user);
     }
@@ -138,10 +144,18 @@ router.get('/:id', asyncHandler(async (req, res) => {
       return apiResponse.notFound(res, 'User');
     }
     
-    // DB에서 조회한 데이터를 Redis에 60초간 캐시
-    await redisClient.setEx(cacheKey, 60, JSON.stringify(user.toObject()));
-    logger.info(`User retrieved from DB and cached: ${user.username}`);
+    // DB에서 조회한 데이터를 Redis hash에 저장하고 60초간 캐시
+    const userData = user.toObject();
+    await redisClient.hSet(cacheKey, {
+      _id: userData._id.toString(),
+      username: userData.username,
+      email: userData.email,
+      createdAt: userData.createdAt.toISOString(),
+      updatedAt: userData.updatedAt.toISOString()
+    });
+    await redisClient.expire(cacheKey, 60);
     
+    logger.info(`User retrieved from DB and cached: ${user.username}`);
     return apiResponse.success(res, user);
     
   } catch (redisError) {
@@ -278,13 +292,13 @@ router.put('/:id', asyncHandler(async (req, res) => {
     return apiResponse.notFound(res, 'User');
   }
 
-  // 사용자 정보가 업데이트되었으므로 캐시 무효화
+  // 사용자 정보가 업데이트되었으므로 hash 캐시 무효화
   try {
     const redisClient = getRedisClient();
     await redisClient.del(cacheKey);
-    logger.info(`User cache invalidated for: ${user.username}`);
+    logger.info(`User hash cache invalidated for: ${user.username}`);
   } catch (redisError) {
-    logger.warn(`Failed to invalidate cache: ${redisError.message}`);
+    logger.warn(`Failed to invalidate hash cache: ${redisError.message}`);
   }
 
   logger.success(`User updated: ${user.username}`);
@@ -325,13 +339,13 @@ router.delete('/:id', asyncHandler(async (req, res) => {
     return apiResponse.notFound(res, 'User');
   }
 
-  // 사용자가 삭제되었으므로 캐시 무효화
+  // 사용자가 삭제되었으므로 hash 캐시 무효화
   try {
     const redisClient = getRedisClient();
     await redisClient.del(cacheKey);
-    logger.info(`User cache invalidated for deleted user: ${user.username}`);
+    logger.info(`User hash cache invalidated for deleted user: ${user.username}`);
   } catch (redisError) {
-    logger.warn(`Failed to invalidate cache: ${redisError.message}`);
+    logger.warn(`Failed to invalidate hash cache: ${redisError.message}`);
   }
 
   logger.success(`User deleted: ${user.username}`);

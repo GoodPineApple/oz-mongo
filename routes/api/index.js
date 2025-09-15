@@ -12,6 +12,7 @@ const usersRouter = require('./users');
 const designTemplatesRouter = require('./design-templates');
 const memosRouter = require('./memos');
 const filesRouter = require('./files');
+const emailQueueRouter = require('./email-queue');
 
 // API 정보 엔드포인트
 // Swagger UI 설정 - /api 경로에서 접근 가능
@@ -38,5 +39,6 @@ router.use('/users', usersRouter);
 router.use('/templates', designTemplatesRouter);
 router.use('/memos', memosRouter);
 router.use('/files', filesRouter);
+router.use('/email-queue', emailQueueRouter);
 
 module.exports = router;

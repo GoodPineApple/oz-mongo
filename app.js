@@ -17,6 +17,7 @@ const adminRouter = require('./routes/admin');
 
 const database = require('./util/database');
 const { connectRedis } = require('./util/redisService');
+const emailQueue = require('./util/emailQueue');
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15분
@@ -31,7 +32,11 @@ database.connect().catch(err => {
 });
 
 // Redis 연결 초기화 및 테스트
-connectRedis().catch(err => {
+connectRedis().then(() => {
+  // Redis 연결 성공 후 이메일 큐 시작
+  emailQueue.startProcessing();
+  logger.info('Email queue processing started');
+}).catch(err => {
   logger.error(`Failed to connect to Redis: ${err.message}`);
   // Redis 연결 실패 시에도 서버는 계속 실행 (선택적 의존성)
 });
